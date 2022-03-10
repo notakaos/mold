@@ -12,6 +12,11 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+#if defined(__APPLE__) && defined(__MACH__)
+#include <sys/param.h>
+#include <mach-o/dyld.h>
+#endif
+
 #define DAEMON_TIMEOUT 30
 
 namespace mold::elf {
@@ -247,7 +252,14 @@ void daemonize(Context<E> &ctx, std::function<void()> *wait_for_client,
 }
 
 static std::string get_self_path() {
+#if defined(__APPLE__) && defined(__MACH__)
+  char path[MAXPATHLEN+1];
+  uint32_t size = sizeof(path);
+  _NSGetExecutablePath(path, &size);
+  return std::string(path);
+#else
   return std::filesystem::read_symlink("/proc/self/exe");
+#endif
 }
 
 template <typename E>

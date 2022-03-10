@@ -88,6 +88,11 @@
 #include <sstream>
 #include <unistd.h>
 
+#if defined(__APPLE__) && defined(__MACH__)
+#include <sys/param.h>
+#include <mach-o/dyld.h>
+#endif
+
 #if 0
 # define LOG std::cerr
 #else
@@ -591,7 +596,15 @@ static void restart_process(Context<E> &ctx) {
   args.push_back("--:lto-pass2");
   args.push_back(nullptr);
 
+#if defined(__APPLE__) && defined(__MACH__)
+  char path[MAXPATHLEN+1];
+  uint32_t size = sizeof(path);
+  _NSGetExecutablePath(path, &size);
+  std::string self = std::string(path);
+#else
   std::string self = std::filesystem::read_symlink("/proc/self/exe");
+#endif
+
 
   std::cout << std::flush;
   std::cerr << std::flush;
